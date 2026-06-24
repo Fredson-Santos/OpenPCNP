@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
@@ -12,6 +12,12 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
+
+@event.listens_for(engine, "connect")
+def _set_sqlite_functions(dbapi_connection, connection_record):
+    if hasattr(dbapi_connection, "create_function"):
+        dbapi_connection.create_function("to_tsvector", 2, lambda a, b: "", deterministic=True)
+
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture(scope="session", autouse=True)
