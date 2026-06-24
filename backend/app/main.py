@@ -1,10 +1,13 @@
 from fastapi import FastAPI
+from app.api.api import api_router
 
 app = FastAPI(
     title="OpenPNCP API",
     description="Observatório de Licitações Públicas - API REST para dados do PNCP",
     version="1.0.0",
 )
+
+app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health", tags=["Health"])
 def health_check():
@@ -15,7 +18,6 @@ def health_check():
         "status": "ok",
         "message": "API OpenPNCP está rodando!",
     }
-
 
 # comando para rodar: 
 """
