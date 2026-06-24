@@ -26,3 +26,31 @@ class PaginatedLicitacaoResponse(BaseModel):
     page: int
     total: int
     page_size: int
+
+class ItemLicitacaoResponse(BaseModel):
+    id: uuid.UUID
+    licitacao_id: uuid.UUID
+    descricao: str
+    quantidade: float
+    valor_unitario: Optional[float] = None
+    valor_total: Optional[float] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ArquivoLicitacaoResponse(BaseModel):
+    id: uuid.UUID
+    licitacao_id: uuid.UUID
+    nome: str
+    url: str
+    tipo: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class FaseLicitacaoResponse(BaseModel):
+    id: uuid.UUID
+    licitacao_id: uuid.UUID
+    data: datetime
+    descricao: str
+    status: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)

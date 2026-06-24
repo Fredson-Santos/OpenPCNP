@@ -39,3 +39,9 @@ class StatsRankingResponse(BaseModel):
     ranking_orgaos: List[RankingOrgao]
     ranking_estados: List[RankingEstado]
     ranking_modalidades: List[RankingModalidade]
+
+class EvolucaoMensalResponse(BaseModel):
+    mes: str
+    quantidade: int
+
+    model_config = ConfigDict(from_attributes=True)

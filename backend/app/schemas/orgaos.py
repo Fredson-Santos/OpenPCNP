@@ -11,5 +11,11 @@ class OrgaoResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class OrgaoAutocompleteResponse(BaseModel):
+    id: uuid.UUID
+    nome: str
+
+    model_config = ConfigDict(from_attributes=True)
+
 class OrgaosResponse(BaseModel):
     data: List[OrgaoResponse]
