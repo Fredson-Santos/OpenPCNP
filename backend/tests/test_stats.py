@@ -43,3 +43,12 @@ def test_read_stats_with_data(client, db_session):
     assert data["total_licitacoes"] == 3
     assert data["valor_total"] == 600.0
     assert data["orgaos_ativos"] == 2
+
+def test_evolucao_mensal(client, db_session):
+    create_mock_data(db_session)
+    response = client.get("/api/v1/stats/evolucao-mensal")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+    if len(response.json()) > 0:
+        assert "mes" in response.json()[0]
+        assert "quantidade" in response.json()[0]

@@ -84,7 +84,7 @@ def test_read_licitacoes_filters(client, db_session):
     assert resp.json()["data"][0]["situacao"] == "Aberta"
 
     # Filtro por Valor Mínimo
-    resp = client.get("/api/v1/licitacoes/?valor=200000")
+    resp = client.get("/api/v1/licitacoes/?valor_minimo=200000")
     assert len(resp.json()["data"]) == 1
     assert resp.json()["data"][0]["valor_estimado"] == 500000.0
 
@@ -113,3 +113,21 @@ def test_read_licitacao_not_found(client):
     fake_id = uuid.uuid4()
     resp = client.get(f"/api/v1/licitacoes/{fake_id}")
     assert resp.status_code == 404
+
+def test_read_licitacao_itens(client, db_session):
+    l1, _ = create_mock_data(db_session)
+    resp = client.get(f"/api/v1/licitacoes/{l1.id}/itens")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+def test_read_licitacao_arquivos(client, db_session):
+    l1, _ = create_mock_data(db_session)
+    resp = client.get(f"/api/v1/licitacoes/{l1.id}/arquivos")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+def test_read_licitacao_historico(client, db_session):
+    l1, _ = create_mock_data(db_session)
+    resp = client.get(f"/api/v1/licitacoes/{l1.id}/historico")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)

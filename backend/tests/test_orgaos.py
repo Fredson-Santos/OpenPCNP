@@ -44,3 +44,19 @@ def test_read_orgao_not_found(client):
     orgao_id = uuid.uuid4()
     response = client.get(f"/api/v1/orgaos/{orgao_id}")
     assert response.status_code == 404
+
+def test_autocomplete_orgaos(client, db_session):
+    orgao = Orgao(
+        id=uuid.uuid4(),
+        cnpj="99999999000199",
+        nome="Prefeitura de Teste",
+        esfera="Municipal",
+        uf="MG"
+    )
+    db_session.add(orgao)
+    db_session.commit()
+
+    response = client.get("/api/v1/orgaos/autocomplete?q=teste")
+    assert response.status_code == 200
+    assert len(response.json()) >= 1
+    assert "Teste" in response.json()[0]["nome"]
