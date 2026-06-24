@@ -1,0 +1,37 @@
+from app.core.database import Base
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Index, text
+from sqlalchemy.orm import relationship
+
+class Orgao(Base):
+    __tablename__ = 'orgaos'
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(255), nullable=False)
+    esfera = Column(String(50))
+    uf = Column(String(2))
+
+    licitacoes = relationship("Licitacao", back_populates="orgao")
+
+
+class Licitacao(Base):
+    __tablename__ = 'licitacoes'
+
+    id = Column(Integer, primary_key=True, index=True)
+    orgao_id = Column(Integer, ForeignKey('orgaos.id'), nullable=False)
+    numero_controle = Column(String(100), unique=True, index=True)
+    objeto = Column(Text, nullable=False)
+    modalidade = Column(String(100))
+    situacao = Column(String(100))
+    valor_estimado = Column(Float)
+    data_publicacao = Column(DateTime)
+    data_encerramento = Column(DateTime)
+
+    orgao = relationship("Orgao", back_populates="licitacoes")
+
+    __table_args__ = (
+        Index(
+            'ix_licitacoes_objeto_fts',
+            text("to_tsvector('portuguese', objeto)"),
+            postgresql_using='gin'
+        ),
+    )
