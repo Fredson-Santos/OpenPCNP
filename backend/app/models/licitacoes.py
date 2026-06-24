@@ -17,6 +17,9 @@ class Licitacao(Base):
     data_encerramento = Column(DateTime)
 
     orgao = relationship("Orgao", back_populates="licitacoes")
+    itens = relationship("ItemLicitacao", back_populates="licitacao", cascade="all, delete-orphan")
+    arquivos = relationship("ArquivoLicitacao", back_populates="licitacao", cascade="all, delete-orphan")
+    fases = relationship("FaseLicitacao", back_populates="licitacao", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index(
@@ -25,3 +28,37 @@ class Licitacao(Base):
             postgresql_using='gin'
         ),
     )
+
+class ItemLicitacao(Base):
+    __tablename__ = 'itens_licitacao'
+    
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    licitacao_id = Column(Uuid(as_uuid=True), ForeignKey('licitacoes.id'), nullable=False)
+    descricao = Column(Text, nullable=False)
+    quantidade = Column(Float, nullable=False)
+    valor_unitario = Column(Float)
+    valor_total = Column(Float)
+
+    licitacao = relationship("Licitacao", back_populates="itens")
+
+class ArquivoLicitacao(Base):
+    __tablename__ = 'arquivos_licitacao'
+    
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    licitacao_id = Column(Uuid(as_uuid=True), ForeignKey('licitacoes.id'), nullable=False)
+    nome = Column(String(255), nullable=False)
+    url = Column(Text, nullable=False)
+    tipo = Column(String(100))
+
+    licitacao = relationship("Licitacao", back_populates="arquivos")
+
+class FaseLicitacao(Base):
+    __tablename__ = 'fases_licitacao'
+    
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    licitacao_id = Column(Uuid(as_uuid=True), ForeignKey('licitacoes.id'), nullable=False)
+    data = Column(DateTime, nullable=False)
+    descricao = Column(String(255), nullable=False)
+    status = Column(String(100))
+
+    licitacao = relationship("Licitacao", back_populates="fases")
