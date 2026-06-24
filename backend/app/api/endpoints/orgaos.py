@@ -1,13 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
-from typing import Any
+from typing import Any, List
 
 from app.core.database import get_db
 from app.crud import orgaos as crud_orgaos
-from app.schemas.orgaos import OrgaoResponse, OrgaosResponse
+from app.schemas.orgaos import OrgaoResponse, OrgaosResponse, OrgaoAutocompleteResponse
 
 router = APIRouter()
+
+@router.get("/autocomplete", response_model=List[OrgaoAutocompleteResponse])
+def autocomplete_orgaos(
+    q: str = Query(..., description="Termo de busca pelo nome do órgão"),
+    limit: int = Query(10, ge=1, le=50, description="Limite de resultados"),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Retorna órgãos para componentes de autocomplete.
+    """
+    return crud_orgaos.autocomplete_orgaos(db, q=q, limit=limit)
 
 @router.get("/", response_model=OrgaosResponse)
 def read_orgaos(

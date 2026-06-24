@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
-from typing import Any, Optional
+from typing import Any, Optional, List
+from datetime import datetime
 
 from app.core.database import get_db
 from app.crud import licitacoes as crud_licitacoes
-from app.schemas.licitacoes import LicitacaoResponse, PaginatedLicitacaoResponse
+from app.schemas.licitacoes import (
+    LicitacaoResponse, PaginatedLicitacaoResponse, 
+    ItemLicitacaoResponse, ArquivoLicitacaoResponse, FaseLicitacaoResponse
+)
 
 router = APIRouter()
 
@@ -18,7 +22,11 @@ def read_licitacoes(
     uf: Optional[str] = Query(None, description="Filtrar por UF do órgão"),
     modalidade: Optional[str] = Query(None, description="Filtrar por modalidade"),
     situacao: Optional[str] = Query(None, description="Filtrar por situação"),
-    valor: Optional[float] = Query(None, description="Filtrar por valor estimado mínimo")
+    valor_minimo: Optional[float] = Query(None, description="Filtrar por valor estimado mínimo"),
+    valor_maximo: Optional[float] = Query(None, description="Filtrar por valor estimado máximo"),
+    data_inicio: Optional[datetime] = Query(None, description="Filtrar publicações a partir desta data"),
+    data_fim: Optional[datetime] = Query(None, description="Filtrar publicações até esta data"),
+    sort: Optional[str] = Query(None, description="Ordenação (ex: data_publicacao_desc, valor_desc)")
 ) -> Any:
     """
     Recupera lista de licitações paginada e com filtros.
@@ -32,7 +40,11 @@ def read_licitacoes(
         uf=uf,
         modalidade=modalidade,
         situacao=situacao,
-        valor=valor
+        valor_minimo=valor_minimo,
+        valor_maximo=valor_maximo,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        sort=sort
     )
     return {
         "data": items,
@@ -53,3 +65,33 @@ def read_licitacao(
     if not licitacao:
         raise HTTPException(status_code=404, detail="Licitação não encontrada")
     return licitacao
+
+@router.get("/{licitacao_id}/itens", response_model=List[ItemLicitacaoResponse])
+def read_licitacao_itens(
+    licitacao_id: UUID,
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Recupera os itens de uma licitação específica.
+    """
+    return crud_licitacoes.get_itens(db, licitacao_id=licitacao_id)
+
+@router.get("/{licitacao_id}/arquivos", response_model=List[ArquivoLicitacaoResponse])
+def read_licitacao_arquivos(
+    licitacao_id: UUID,
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Recupera os arquivos anexos de uma licitação específica.
+    """
+    return crud_licitacoes.get_arquivos(db, licitacao_id=licitacao_id)
+
+@router.get("/{licitacao_id}/historico", response_model=List[FaseLicitacaoResponse])
+def read_licitacao_historico(
+    licitacao_id: UUID,
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Recupera o histórico de fases de uma licitação específica.
+    """
+    return crud_licitacoes.get_fases(db, licitacao_id=licitacao_id)
