@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.database import SessionLocal
-from app.models import Orgao, Licitacao
+from app.models import Orgao, Licitacao, ItemLicitacao, ArquivoLicitacao, FaseLicitacao
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -37,6 +37,26 @@ def fetch_pncp_data(data_inicial: str, data_final: str, page: int = 1) -> Dict[s
     response = requests.get(PNCP_API_URL, params=params)
     response.raise_for_status()
     return response.json()
+
+def fetch_itens(cnpj: str, ano: int, seq: int) -> List[Dict[str, Any]]:
+    url = f"https://pncp.gov.br/api/pncp/v1/orgaos/{cnpj}/compras/{ano}/{seq}/itens"
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            return resp.json()
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"Erro ao buscar itens para {cnpj} {ano}/{seq}: {e}")
+    return []
+
+def fetch_arquivos(cnpj: str, ano: int, seq: int) -> List[Dict[str, Any]]:
+    url = f"https://pncp.gov.br/api/pncp/v1/orgaos/{cnpj}/compras/{ano}/{seq}/arquivos"
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            return resp.json()
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"Erro ao buscar arquivos para {cnpj} {ano}/{seq}: {e}")
+    return []
 
 def ingest_data():
     db = SessionLocal()
@@ -116,6 +136,49 @@ def ingest_data():
                     )
                     db.add(licitacao)
                     total_inserted += 1
+
+                db.flush()
+                
+                ano_compra = item.get("anoCompra")
+                seq_compra = item.get("sequencialCompra")
+                
+                # Excluir detalhes antigos para evitar duplicação em atualizações
+                db.query(ItemLicitacao).filter(ItemLicitacao.licitacao_id == licitacao.id).delete()
+                db.query(ArquivoLicitacao).filter(ArquivoLicitacao.licitacao_id == licitacao.id).delete()
+                db.query(FaseLicitacao).filter(FaseLicitacao.licitacao_id == licitacao.id).delete()
+                db.flush()
+
+                if ano_compra and seq_compra and cnpj:
+                    itens_data = fetch_itens(cnpj, ano_compra, seq_compra)
+                    for i_data in itens_data:
+                        novo_item = ItemLicitacao(
+                            licitacao_id=licitacao.id,
+                            descricao=i_data.get("descricao", "Sem descrição")[:200], # truncar se for mt longo
+                            quantidade=i_data.get("quantidade", 0.0),
+                            valor_unitario=i_data.get("valorUnitarioEstimado", 0.0),
+                            valor_total=i_data.get("valorTotal") or i_data.get("valorTotalEstimado", 0.0)
+                        )
+                        db.add(novo_item)
+
+                    arquivos_data = fetch_arquivos(cnpj, ano_compra, seq_compra)
+                    for a_data in arquivos_data:
+                        url = a_data.get("url") or a_data.get("linkAcesso") or ""
+                        if url:
+                            novo_arquivo = ArquivoLicitacao(
+                                licitacao_id=licitacao.id,
+                                nome=a_data.get("tituloDocumento", "Sem título")[:200],
+                                url=url,
+                                tipo=str(a_data.get("tipoDocumentoId", "0"))
+                            )
+                            db.add(novo_arquivo)
+
+                fase = FaseLicitacao(
+                    licitacao_id=licitacao.id,
+                    data=data_publicacao or datetime.now(),
+                    descricao=f"Status: {situacao}",
+                    status=situacao
+                )
+                db.add(fase)
             
             db.commit()
             
