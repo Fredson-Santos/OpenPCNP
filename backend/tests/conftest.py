@@ -3,14 +3,19 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import app as fastapi_app
 from app.core.database import Base, get_db
+import app.models  # Importa para registrar as models na Base
+
+from sqlalchemy.pool import StaticPool
 
 # SQLite in-memory isolado para a sessão de testes
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, 
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
 )
 
 @event.listens_for(engine, "connect")
@@ -20,7 +25,7 @@ def _set_sqlite_functions(dbapi_connection, connection_record):
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def setup_db():
     # Cria todas as tabelas no SQLite in-memory antes de rodar a suíte de testes
     Base.metadata.create_all(bind=engine)
@@ -45,8 +50,8 @@ def client(db_session):
         finally:
             pass
 
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
+    fastapi_app.dependency_overrides[get_db] = override_get_db
+    with TestClient(fastapi_app) as c:
         yield c
     # Remove o override ao final do teste
-    app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.clear()

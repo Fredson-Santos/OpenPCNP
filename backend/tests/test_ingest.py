@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from scripts.ingest import parse_date, ingest_data
-from app.models.models import Orgao, Licitacao
+from app.models import Orgao, Licitacao
 
 def test_parse_date():
     assert parse_date("2023-10-18T14:30:00") == datetime(2023, 10, 18, 14, 30)
