@@ -1,392 +1,88 @@
-# Observatório de Licitações Públicas
+# Observatório de Licitações Públicas (OpenPNCP)
 
 ## Objetivo
+Construir uma plataforma para ingestão, busca e análise de licitações públicas utilizando dados do Portal Nacional de Contratações Públicas (PNCP). O projeto tem como foco demonstrar competências avançadas em Backend, Engenharia de Dados, SQL, Modelagem Relacional, APIs REST, Docker e Deploy em produção.
 
-Construir uma plataforma para ingestão, busca e análise de licitações públicas utilizando dados do Portal Nacional de Contratações Públicas (PNCP).
-
-O projeto tem como foco demonstrar competências de:
-
-* Backend
-* Engenharia de Dados
-* SQL
-* Modelagem Relacional
-* APIs REST
-* Docker
-* Deploy em produção
+**Link Útil:** [Documentação da API Oficial do PNCP (Swagger)](https://pncp.gov.br/api/consulta/swagger-ui/index.html#/)
 
 ---
 
-# Stack Tecnológica
-
-## Backend
-
-* Python
-* FastAPI
-* SQLAlchemy
-* Alembic
-
-## Banco de Dados
-
-* SQLite (Ambiente Local/Dev)
-* PostgreSQL (Produção)
-
-## Infraestrutura
-
-* Docker
-* Docker Compose
-* VPS
-
-## Testes
-
-* Pytest
+## Stack Tecnológica
+- **Backend:** Python, FastAPI, SQLAlchemy, Alembic
+- **Banco de Dados:** SQLite (Dev), PostgreSQL (Produção)
+- **Infraestrutura:** Docker, Docker Compose, VPS
+- **Testes:** Pytest
 
 ---
 
-# Arquitetura
-
+## Arquitetura Base
 ```text
-PNCP API
-    ↓
-ETL Python
-    ↓
-Banco de Dados
-    ↓
-FastAPI
-    ↓
-Frontend (futuro)
+PNCP API  ➔  ETL Python  ➔  Banco de Dados  ➔  FastAPI  ➔  Frontend (Futuro)
 ```
 
 ---
 
-# Modelo Inicial
+## Modelo de Dados Inicial (V1)
 
-## Tabela: orgaos
+### `orgaos`
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | UUID | Chave Primária |
+| `nome` | VARCHAR | Nome do Órgão |
+| `esfera` | VARCHAR | Federal, Estadual, Municipal |
+| `uf` | VARCHAR | Sigla do Estado |
 
-| Campo  | Tipo    |
-| ------ | ------- |
-| id     | UUID    |
-| nome   | VARCHAR |
-| esfera | VARCHAR |
-| uf     | VARCHAR |
-
-## Tabela: licitacoes
-
-| Campo             | Tipo    |
-| ----------------- | ------- |
-| id                | UUID    |
-| orgao_id          | UUID    |
-| numero_controle   | VARCHAR |
-| objeto            | TEXT    |
-| modalidade        | VARCHAR |
-| situacao          | VARCHAR |
-| valor_estimado    | NUMERIC |
-| data_publicacao   | DATE    |
-| data_encerramento | DATE    |
-
-### Relacionamento
-
-```text
-orgaos
-  │
-  └─── 1:N ─── licitacoes
-```
+### `licitacoes`
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | UUID | Chave Primária |
+| `orgao_id` | UUID | Chave Estrangeira (1:N com `orgaos`) |
+| `numero_controle` | VARCHAR | Identificador no PNCP |
+| `objeto` | TEXT | Descrição do item licitado |
+| `modalidade` | VARCHAR | Pregão, Concorrência, etc. |
+| `situacao` | VARCHAR | Aberta, Fechada, etc. |
+| `valor_estimado`| NUMERIC | Valor orçado |
+| `data_publicacao` | DATE | Data de publicação |
+| `data_encerramento`| DATE | Data limite limite |
 
 ---
 
-# Funcionalidades V1
+## Funcionalidades e Endpoints (V1)
 
-## Ingestão de Dados
+### 1. Ingestão de Dados (ETL)
+Consumo e armazenamento recorrente dos dados da API oficial utilizando `python ingest.py`.
 
-Objetivo:
+### 2. Endpoints da API REST
+- **Licitações:** `GET /licitacoes` e `GET /licitacoes/{id}`
+- **Órgãos:** `GET /orgaos` e `GET /orgaos/{id}`
 
-* Consumir dados do PNCP
-* Transformar os dados
-* Armazenar no Banco de Dados
+### 3. Filtros, Paginação e Busca Full Text
+- **Filtros Dinâmicos:** `?uf=SP`, `?modalidade=Pregao`, `?situacao=Aberta`, `?valor_min=100k`, `?valor_max=500k`
+- **Paginação:** `?page=1&page_size=20`
+- **Busca Avançada (FTS5 / GIN):** `?q=notebook`, `?q=cloud`
 
-Script inicial:
-
-```bash
-python ingest.py
-```
-
----
-
-## API REST
-
-### Licitações
-
-```http
-GET /licitacoes
-
-GET /licitacoes/{id}
-```
-
-### Órgãos
-
-```http
-GET /orgaos
-
-GET /orgaos/{id}
-```
+### 4. Estatísticas e Rankings
+- **Geral:** `GET /stats` (Total de licitações, Valor total estimado, Órgãos ativos)
+- **Rankings:** `GET /ranking/orgaos`, `GET /ranking/estados`, `GET /ranking/modalidades`
 
 ---
 
-## Filtros
+## Roadmap de Evolução
 
-```http
-GET /licitacoes?uf=SP
+### V2: Expansão de Entidades e Performance
+- **Novas Tabelas:** Fornecedores e Contratos atrelados às licitações.
+- **Rankings de Fornecedores:** Maiores vencedores e consolidação do maior volume contratado.
+- **Detecção de Anomalias (SQL via Metabase/API):** Valores orçados mais de 3x a média da categoria, prazos atípicos (< 5 dias), etc.
+- **Cache de Alta Performance:** Integração com Redis para aliviar cálculos pesados.
 
-GET /licitacoes?modalidade=Pregao
+### V3: Frontend e Notificações Proativas
+- **Dashboard React/Next.js:** Interface web para consumo analítico e visual.
+- **Alertas Personalizados:** Envio de notificações quando novas licitações correspondentes a palavras-chave monitoradas (ex: "servidores", "software") forem abertas.
 
-GET /licitacoes?situacao=Aberta
-
-GET /licitacoes?valor_min=100000
-
-GET /licitacoes?valor_max=500000
-```
-
----
-
-## Paginação
-
-```http
-GET /licitacoes?page=1&page_size=20
-```
+### V4: IA Generativa Aplicada
+- **Resumo de Editais com IA:** Leitura e processamento de PDFs via **OpenAI/Ollama/LangChain** para extrair as exigências técnicas principais, objetos secundários, prazo real de entrega e mapear possíveis riscos e amarras contratuais.
 
 ---
 
-## Busca Full Text
-
-Pesquisar licitações pelo objeto da contratação.
-
-Exemplos:
-
-```http
-GET /licitacoes?q=notebook
-
-GET /licitacoes?q=software
-
-GET /licitacoes?q=cloud
-```
-
-Implementação (abstração dependendo do ambiente):
-
-* SQLite FTS5 (Dev)
-* PostgreSQL to_tsvector e índices GIN (Prod)
-
----
-
-## Estatísticas
-
-### Endpoint
-
-```http
-GET /stats
-```
-
-### Retorno esperado
-
-```json
-{
-  "total_licitacoes": 15432,
-  "valor_total": 4500000000,
-  "orgaos_ativos": 823
-}
-```
-
----
-
-## Rankings
-
-### Órgãos que mais contratam
-
-```http
-GET /ranking/orgaos
-```
-
-### Estados com maior volume financeiro
-
-```http
-GET /ranking/estados
-```
-
-### Modalidades mais utilizadas
-
-```http
-GET /ranking/modalidades
-```
-
----
-
-## Deploy
-
-Publicar API em produção utilizando uma VPS.
-
-Entregáveis:
-
-* API pública
-* Banco PostgreSQL (VPS)
-* Documentação Swagger disponível
-
----
-
-## Testes
-
-Cobertura inicial:
-
-* Health Check
-* Endpoint de busca
-* Endpoint de listagem
-* Conexão com banco
-
----
-
-# V2
-
-## Novas Entidades
-
-### Fornecedores
-
-Tabela para empresas participantes e vencedoras.
-
-### Contratos
-
-Relacionamento entre licitações e contratos efetivamente firmados.
-
----
-
-## Rankings de Fornecedores
-
-```http
-GET /ranking/fornecedores
-```
-
-Exemplos:
-
-* maiores vencedores
-* maior volume contratado
-* contratos por órgão
-
----
-
-## Anomalias por SQL
-
-Detecção baseada em regras.
-
-Exemplos:
-
-### Valor acima da média
-
-```sql
-valor > media_categoria * 3
-```
-
-### Prazo atípico
-
-```sql
-prazo_dias < 5
-```
-
-### Fornecedor recorrente
-
-Mesmo fornecedor vencendo múltiplas licitações em curto período.
-
----
-
-## Cache
-
-Melhorar performance dos rankings e estatísticas.
-
-Possíveis opções:
-
-* Redis
-* Cache em memória
-
----
-
-# V3
-
-## Dashboard React
-
-Interface web para:
-
-* Painel Geral
-* Busca
-* Rankings
-* Detalhes da Licitação
-
----
-
-## Alertas Personalizados
-
-Exemplos:
-
-* notebook
-* cloud
-* software
-* servidores
-
-Receber notificações quando novas licitações compatíveis forem publicadas.
-
----
-
-# V4
-
-## Resumo de Editais com IA
-
-Objetivo:
-
-Processar PDFs dos editais e gerar resumos automáticos.
-
-Exemplos:
-
-* objeto da contratação
-* exigências técnicas
-* prazo de entrega
-* riscos identificados
-
-Possíveis tecnologias:
-
-* OpenAI
-* Ollama
-* LangChain
-
----
-
-# Diferenciais para Entrevistas
-
-O projeto demonstra:
-
-* Consumo de APIs externas
-* ETL
-* SQL avançado
-* Full Text Search (SQLite / PostgreSQL)
-* Modelagem relacional
-* FastAPI
-* Docker
-* Deploy em produção
-* Testes automatizados
-* Análise de dados com dados reais do governo brasileiro
-
----
-
-# Meta de Entrega
-
-## Currículo
-
-A versão V1 deve estar concluída e em produção.
-
-Escopo mínimo:
-
-* Ingestão PNCP
-* SQLite / PostgreSQL
-* Docker
-* FastAPI
-* Busca Full Text
-* Filtros
-* Paginação
-* Estatísticas
-* Rankings
-* Deploy VPS
-* README completo
-* Testes básicos
+## Meta de Entrega (MVP)
+Para se tornar uma excelente vitrine técnica, a **Versão V1** deve estar integralmente em produção contendo obrigatoriamente: Ingestão de dados automatizada, Busca Full-text, Banco escalável (PostgreSQL no VPS via Docker), Deploy público, e uma boa camada de testes automatizados com Pytest.

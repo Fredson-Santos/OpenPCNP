@@ -14,9 +14,9 @@ Este roadmap foi gerado com base nas fases descritas na documentação principal
   - [x] 2.2 - Criar tabela `licitacoes` (id, orgao_id, numero_controle, objeto, modalidade, situacao, valor_estimado, data_publicacao, data_encerramento).
   - [x] 2.3 - Configurar índices GIN para busca Full Text.
 - [ ] **3 - Ingestão de Dados (ETL)**
-  - [ ] 3.1 - Desenvolver script `ingest.py` para consumir a API do PNCP.
-  - [ ] 3.2 - Implementar transformação e limpeza dos dados consumidos.
-  - [ ] 3.3 - Salvar os dados processados no Banco de Dados (SQLite em dev, PostgreSQL em prod).
+  - [x] 3.1 - Desenvolver script `ingest.py` para consumir a API do PNCP.
+  - [x] 3.2 - Implementar transformação e limpeza dos dados consumidos.
+  - [x] 3.3 - Salvar os dados processados no Banco de Dados (SQLite em dev, PostgreSQL em prod).
 - [ ] **4 - Desenvolvimento da API REST (FastAPI)**
   - [ ] 4.1 - Criar endpoints de leitura: `/licitacoes`, `/licitacoes/{id}`, `/orgaos`, `/orgaos/{id}`.
   - [ ] 4.2 - Implementar paginação em todas as listagens (`page`, `page_size`).
