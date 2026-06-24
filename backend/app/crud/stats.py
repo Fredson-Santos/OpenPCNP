@@ -62,3 +62,27 @@ def get_ranking_modalidades(db: Session, limit: int = 10):
         .all()
     )
     return [dict(r._mapping) for r in ranking]
+
+def get_ranking_licitacoes(db: Session, limit: int = 10):
+    ranking = (
+        db.query(
+            Licitacao.id.label("licitacao_id"),
+            Licitacao.objeto,
+            Licitacao.valor_estimado,
+            Orgao.nome.label("orgao_nome")
+        )
+        .join(Orgao, Orgao.id == Licitacao.orgao_id)
+        .filter(Licitacao.valor_estimado.is_not(None))
+        .order_by(desc(Licitacao.valor_estimado))
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "licitacao_id": str(r.licitacao_id),
+            "objeto": r.objeto,
+            "valor_estimado": r.valor_estimado,
+            "orgao_nome": r.orgao_nome
+        }
+        for r in ranking
+    ]

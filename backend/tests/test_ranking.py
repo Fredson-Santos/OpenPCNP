@@ -59,3 +59,20 @@ def test_ranking_modalidades(client, db_session):
     assert data[0]["total_licitacoes"] == 2
     assert data[1]["modalidade"] == "Concorrência"
     assert data[1]["total_licitacoes"] == 1
+
+def test_ranking_licitacoes(client, db_session):
+    create_mock_data(db_session)
+    response = client.get("/api/v1/ranking/licitacoes")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 3
+    # Licitacao 3 tem valor 300
+    assert data[0]["objeto"] == "obj3"
+    assert data[0]["valor_estimado"] == 300.0
+    assert data[0]["orgao_nome"] == "Orgao B"
+    # Licitacao 2 tem valor 200
+    assert data[1]["objeto"] == "obj2"
+    assert data[1]["valor_estimado"] == 200.0
+    # Licitacao 1 tem valor 100
+    assert data[2]["objeto"] == "obj1"
+    assert data[2]["valor_estimado"] == 100.0

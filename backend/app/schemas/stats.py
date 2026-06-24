@@ -27,6 +27,14 @@ class RankingModalidade(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class RankingLicitacao(BaseModel):
+    licitacao_id: str
+    objeto: str
+    valor_estimado: float
+    orgao_nome: str
+
+    model_config = ConfigDict(from_attributes=True)
+
 class StatsRankingResponse(BaseModel):
     ranking_orgaos: List[RankingOrgao]
     ranking_estados: List[RankingEstado]
