@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, text
 from app.models.licitacoes import Licitacao
 from app.models.orgaos import Orgao
 
@@ -86,3 +86,19 @@ def get_ranking_licitacoes(db: Session, limit: int = 10):
         }
         for r in ranking
     ]
+
+def get_evolucao_mensal(db: Session):
+    # Depending on dialect, we extract month/year.
+    if db.bind.dialect.name == 'postgresql':
+        query = db.query(
+            func.to_char(Licitacao.data_publicacao, 'YYYY-MM').label("mes"),
+            func.count(Licitacao.id).label("quantidade")
+        ).group_by(text("mes")).order_by(text("mes")).all()
+    else:
+        # SQLite fallback
+        query = db.query(
+            func.strftime('%Y-%m', Licitacao.data_publicacao).label("mes"),
+            func.count(Licitacao.id).label("quantidade")
+        ).group_by(text("mes")).order_by(text("mes")).all()
+
+    return [{"mes": r.mes, "quantidade": r.quantidade} for r in query if r.mes]

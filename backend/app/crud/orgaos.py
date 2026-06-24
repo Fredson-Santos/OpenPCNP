@@ -9,3 +9,9 @@ def get_orgaos(db: Session, skip: int = 0, limit: int = 10):
     total = db.query(Orgao).count()
     items = db.query(Orgao).offset(skip).limit(limit).all()
     return total, items
+
+def autocomplete_orgaos(db: Session, q: str, limit: int = 10):
+    query = db.query(Orgao.id, Orgao.nome)
+    if q:
+        query = query.filter(Orgao.nome.ilike(f"%{q}%"))
+    return query.limit(limit).all()
