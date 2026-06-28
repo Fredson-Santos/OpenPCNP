@@ -33,7 +33,7 @@ O sistema coleta dados de contratações públicas, processa-os e disponibiliza 
 ## ✨ Destaques do Projeto
 * **Ingestão Automática:** Pipeline de ETL para coleta de licitações diretamente da API pública do PNCP e importação de bases em CSV.
 * **Busca Full-Text Avançada:** Motor de busca integrado (FTS5 no SQLite local / GIN com `to_tsvector` no PostgreSQL de produção) para pesquisar termos rapidamente dentro do objeto e itens das licitações.
-* **Detecção de Anomalias:** Motor SQL embarcado que analisa automaticamente licitações sob suspeitas de fraude ou irregularidade (prazos curtos, valores fora do padrão de mercado ou concentração atípica de fornecedores).
+* **Detecção de Anomalias:** Funcionalidade que será implementada utilizando Inteligência Artificial (IA) para realizar análises profundas e identificar suspeitas de fraude ou irregularidade (prazos curtos, valores fora do padrão de mercado ou concentração atípica de fornecedores).
 * **Caching de Alta Performance:** Camada de cache no backend para otimizar os endpoints analíticos e de rankings.
 * **Interface Dinâmica:** Dashboard responsivo construído em React 19 exibindo gráficos de evolução mensal, painel de controle de riscos e ranking de órgãos e fornecedores.
 
@@ -60,7 +60,7 @@ graph TD
 
 ### Backend & Ingestão
 * **Linguagem:** Python 3.10+
-* **Framework Web:** [FastAPI](file:///c:/Users/Fred/Projetos/OpenPNCP/backend/app/main.py) (Assíncrono, tipagem estática com Pydantic)
+* **Framework Web:** [FastAPI](backend/app/main.py) (Assíncrono, tipagem estática com Pydantic)
 * **Banco de Dados:** SQLite (Desenvolvimento) / PostgreSQL (Produção)
 * **ORM & Migrations:** SQLAlchemy 2.0+ & Alembic
 * **Cache:** `fastapi-cache2` (InMemory e suporte a Redis)
@@ -201,7 +201,7 @@ Você pode levantar toda a aplicação (API FastAPI + Frontend React) em contain
 
 ## 📥 Rotinas de Ingestão de Dados (ETL)
 
-O projeto possui scripts dedicados para capturar e alimentar os bancos de dados localizados no diretório [backend/scripts/](file:///c:/Users/Fred/Projetos/OpenPNCP/backend/scripts).
+O projeto possui scripts dedicados para capturar e alimentar os bancos de dados localizados no diretório [backend/scripts/](backend/scripts/).
 
 * **`ingest.py`**: O script principal de ETL. Ele realiza requisições para os endpoints de consulta pública do PNCP, baixa informações de órgãos, licitações, itens vinculados e seus anexos, salvando tudo no banco relacional após limpar os campos nulos e padronizar formatos de datas e valores.
   * **Modo de execução:**
@@ -218,15 +218,15 @@ O projeto possui scripts dedicados para capturar e alimentar os bancos de dados 
 
 ---
 
-## ⚠️ Detecção de Anomalias (Regras de Compliance)
+## ⚠️ Detecção de Anomalias (Análises com IA)
 
-Uma das maiores forças do **OpenPNCP** está no seu motor de auditoria contínua, rodando verificações analíticas via SQL direto nas tabelas de licitações, fornecedores e contratos. 
+A detecção de anomalias e fraudes no **OpenPNCP** é uma funcionalidade planejada para ser implementada com o suporte de **Inteligência Artificial (IA)**. O motor baseado em IA realizará análises preditivas e heurísticas complexas diretamente sobre os dados coletados de licitações, fornecedores e contratos.
 
-Atualmente, o painel central de **Alertas** sinaliza:
+As análises automatizadas por IA focarão em sinalizar:
 
-1. **Prazos Atípicos (Edital Relâmpago):** Licitações cujo intervalo entre a data de publicação e o encerramento do recebimento de propostas é inferior a **5 dias úteis** (desrespeitando os prazos mínimos legais da Lei 14.133/2021).
-2. **Sobrepreço Estimado:** Licitações onde o valor unitário estimado de itens de uso geral supera em **3 vezes (300%)** a média histórica registrada para a mesma categoria de produto.
-3. **Concentração / Fornecedor Recorrente:** Identificação de padrões onde uma mesma empresa (CNPJ) vence recorrentemente licitações de um mesmo órgão em um curto espaço de tempo, sugerindo possíveis direcionamentos de contrato.
+1. **Prazos Atípicos (Edital Relâmpago):** Detecção de licitações publicadas com prazos de recebimento de propostas excessivamente curtos (menos de **5 dias úteis**), dificultando a participação competitiva.
+2. **Sobrepreço Estimado:** Análise semântica e estatística de itens de uso geral para identificar valores unitários estimados que superem em **3 vezes (300%)** a média histórica praticada.
+3. **Concentração e Indícios de Direcionamento:** Mapeamento inteligente de padrões nos quais a mesma empresa (CNPJ) vença recorrentemente licitações em um mesmo órgão em um curto intervalo de tempo.
 
 ---
 
@@ -261,9 +261,9 @@ npm run test
 ## 📖 Documentação Auxiliar
 
 Para entender detalhadamente as escolhas do projeto, acesse os arquivos de planejamento técnico:
-* [Projeto.md (Escopo e Modelo de Dados)](file:///c:/Users/Fred/Projetos/OpenPNCP/docs/Projeto.md)
-* [Infraestrutura.md (Mermaid completo e setup de Produção)](file:///c:/Users/Fred/Projetos/OpenPNCP/docs/Infraestrutura.md)
-* [Roadmap.md (Detalhamento de tarefas)](file:///c:/Users/Fred/Projetos/OpenPNCP/docs/Roadmap.md)
+* [Projeto.md (Escopo e Modelo de Dados)](docs/Projeto.md)
+* [Infraestrutura.md (Mermaid completo e setup de Produção)](docs/Infraestrutura.md)
+* [Roadmap.md (Detalhamento de tarefas)](docs/Roadmap.md)
 
 ---
 
