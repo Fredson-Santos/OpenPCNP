@@ -5,6 +5,7 @@ class StatsResponse(BaseModel):
     total_licitacoes: int
     valor_total: float
     orgaos_ativos: int
+    ultima_atualizacao: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -16,7 +17,7 @@ class RankingOrgao(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class RankingEstado(BaseModel):
-    uf: str
+    uf: Optional[str] = "ND"
     total_licitacoes: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -40,8 +41,16 @@ class StatsRankingResponse(BaseModel):
     ranking_estados: List[RankingEstado]
     ranking_modalidades: List[RankingModalidade]
 
-class EvolucaoMensalResponse(BaseModel):
-    mes: str
+class EvolucaoDiariaResponse(BaseModel):
+    data: str
     quantidade: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DistribuicaoContratosOrgao(BaseModel):
+    orgao_id: str
+    orgao_nome: str
+    quantidade_contratos: int
+    volume_total: float
 
     model_config = ConfigDict(from_attributes=True)
