@@ -20,14 +20,15 @@ class Licitacao(Base):
     itens = relationship("ItemLicitacao", back_populates="licitacao", cascade="all, delete-orphan")
     arquivos = relationship("ArquivoLicitacao", back_populates="licitacao", cascade="all, delete-orphan")
     fases = relationship("FaseLicitacao", back_populates="licitacao", cascade="all, delete-orphan")
+    contratos = relationship("Contrato", back_populates="licitacao", cascade="all, delete-orphan")
 
-    __table_args__ = (
-        Index(
-            'ix_licitacoes_objeto_fts',
-            text("to_tsvector('portuguese', objeto)"),
-            postgresql_using='gin'
-        ),
-    )
+    # __table_args__ = (
+    #     Index(
+    #         'ix_licitacoes_objeto_fts',
+    #         text("to_tsvector('portuguese', objeto)"),
+    #         postgresql_using='gin'
+    #     ),
+    # )
 
 class ItemLicitacao(Base):
     __tablename__ = 'itens_licitacao'
