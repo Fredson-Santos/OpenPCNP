@@ -7,7 +7,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Docker_Compose-2496ED.svg?style=flat&logo=Docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-O **OpenPNCP (Observatório de Licitações Públicas)** é uma plataforma open-source desenvolvida para ingestão, análise e monitoramento inteligente de licitações públicas integradas ao **Portal Nacional de Contratações Públicas (PNCP)** do governo federal. 
+O **OpenPNCP (Observatório de Licitações Públicas)** é um **projeto de estudo** e plataforma open-source desenvolvida para ingestão, análise e monitoramento inteligente de licitações públicas integradas ao **Portal Nacional de Contratações Públicas (PNCP)** do governo federal. 
 
 O sistema coleta dados de contratações públicas, processa-os e disponibiliza um painel analítico interativo para acompanhamento social, auditoria de compliance e detecção de anomalias (como sobrepreço, prazos de edital atípicos ou indícios de direcionamento).
 
