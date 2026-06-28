@@ -261,7 +261,6 @@ npm run test
 ## 📖 Documentação Auxiliar
 
 Para entender detalhadamente o funcionamento técnico do projeto:
-* [Projeto.md (Escopo e Modelo de Dados)](docs/Projeto.md)
 * [API e Dicionário de Dados](docs/API.md) (Endpoints REST e Tabelas Relacionais)
 
 ---

@@ -17,3 +17,5 @@ backend/.pytest_cache/
 # Ignorados
 docs/Projeto.md
 docs/Roadmap.md
+docs/Infraestrutura.md
+docs/INFRA.md
