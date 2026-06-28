@@ -56,6 +56,8 @@ def test_ingest_data(monkeypatch, db_session):
     monkeypatch.setattr("scripts.ingest.fetch_pncp_data", lambda d1, d2, p: mock_response)
     monkeypatch.setattr("scripts.ingest.fetch_itens", lambda c, a, s: mock_itens)
     monkeypatch.setattr("scripts.ingest.fetch_arquivos", lambda c, a, s: mock_arquivos)
+    monkeypatch.setattr("scripts.ingest.fetch_pncp_contratos", lambda d1, d2, p: {"data": [], "paginasRestantes": 0})
+    monkeypatch.setattr("scripts.ingest.time.sleep", lambda s: None)
     
     # Precisamos mockar o db gerado dentro do ingest_data para usar o nosso in-memory db dos testes
     monkeypatch.setattr("scripts.ingest.SessionLocal", lambda: db_session)
