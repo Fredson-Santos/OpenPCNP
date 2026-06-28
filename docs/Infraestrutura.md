@@ -33,8 +33,8 @@ graph TD
 * **Diferenciais:** Utilização de FTS5 no SQLite (Dev) e índices `GIN` e funções de busca textual (`to_tsvector`, `plainto_tsquery`) no PostgreSQL (Produção) para suportar buscas ágeis dentro de objetos e descrições das licitações.
 
 ### 2.3 Rotina de Ingestão de Dados (ETL)
-* Um processo separado da API que rodará em _background_ (podendo ser orquestrado por um `CronJob` na própria VPS ou ferramentas mais complexas no futuro).
-* O script (`ingest.py`) faz requisições às rotas do PNCP, processa/limpa o JSON e grava na nossa base de dados relacional.
+* Um processo separado da API que roda em _background_ (podendo ser orquestrado por um `CronJob` na própria VPS ou ferramentas mais complexas no futuro).
+* Existem múltiplos scripts no diretório `backend/scripts/` (ex: `ingest.py`, `import_compras_pncp.py`, `import_contratos_csv.py`) que fazem requisições às rotas do PNCP e importam CSVs, limpando e gravando os dados na base relacional.
 
 ---
 
@@ -53,13 +53,19 @@ openpncp/
 │   │   ├── schemas/       # Modelos Pydantic (validação de I/O)
 │   │   ├── crud/          # Lógica de banco de dados (Create, Read...)
 │   │   └── services/      # Regras de negócio e rotinas pesadas
-│   ├── scripts/
-│   │   └── ingest.py      # Script ETL (consumo do PNCP)
+│   ├── scripts/           # Scripts ETL (consumo do PNCP e CSVs)
+│   │   ├── ingest.py
+│   │   ├── import_compras_pncp.py
+│   │   └── import_contratos_csv.py
 │   ├── alembic/           # Arquivos de migração do banco (Alembic)
 │   ├── tests/             # Testes automatizados (Pytest)
 │   ├── docker-compose.yml # Orquestração de containers local
 │   ├── Dockerfile         # Imagem da aplicação para deploy
 │   └── requirements.txt   # Dependências da aplicação em Python
+├── frontend/              # Interface Web em React (Vite)
+│   ├── src/               # Código-fonte do frontend
+│   ├── public/            # Arquivos estáticos
+│   └── package.json       # Dependências do frontend
 ├── docs/                  # Documentações estruturais do projeto
 └── README.md              # Documentação de entrada (Raiz)
 ```
@@ -110,8 +116,8 @@ O deploy será realizado em uma Virtual Private Server (VPS), o que nos dá maio
 
 ## 6. Evolução da Infraestrutura
 
-Conforme o _roadmap_, a infraestrutura deverá receber novos componentes gradativamente:
+Conforme o _roadmap_, a infraestrutura recebeu e receberá novos componentes gradativamente:
 
-* **V2 (Performance):** Introdução de um container com **Redis** (local e produção) para lidar com os resultados de consultas frequentes e pesadas nos rankings/estatísticas.
-* **V3 (Dashboard):** Um novo repositório ou diretório focado no **Frontend React** (`Vite` ou `Next.js`), que poderá ter deploy utilizando Nginx na própria VPS, consumindo a API de Produção.
+* **V2 (Performance):** Implementação de cache para acelerar os resultados de consultas frequentes e pesadas nos rankings/estatísticas.
+* **V3 (Dashboard):** A aplicação **Frontend React** (`Vite`) já está incorporada no diretório `frontend/` consumindo a API. O deploy poderá utilizar Nginx na própria VPS para servir os estáticos.
 * **V4 (IA):** Adicionar dependências para interagir com a API da **OpenAI**, ou integrar com **Ollama** caso se deseje uma solução de inteligência artificial open-source operando localmente no próprio container.
