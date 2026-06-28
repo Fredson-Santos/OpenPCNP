@@ -1,14 +1,24 @@
-version: '3.8'
-
 services:
   api:
     build: 
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - .:/app
+      - ./backend:/app
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:///./openpncp.db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true

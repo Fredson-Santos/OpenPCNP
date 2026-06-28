@@ -5,3 +5,15 @@ __pycache__/
 .env
 .idea/
 .vscode/
+
+# Data Files (CSVs)
+csv/
+contratos/
+
+# Testing caches
+.pytest_cache/
+backend/.pytest_cache/
+
+# Ignorados
+docs/Projeto.md
+docs/Roadmap.md
