@@ -260,10 +260,9 @@ npm run test
 
 ## 📖 Documentação Auxiliar
 
-Para entender detalhadamente as escolhas do projeto, acesse os arquivos de planejamento técnico:
+Para entender detalhadamente o funcionamento técnico do projeto:
 * [Projeto.md (Escopo e Modelo de Dados)](docs/Projeto.md)
-* [Infraestrutura.md (Mermaid completo e setup de Produção)](docs/Infraestrutura.md)
-* [Roadmap.md (Detalhamento de tarefas)](docs/Roadmap.md)
+* [API e Dicionário de Dados](docs/API.md) (Endpoints REST e Tabelas Relacionais)
 
 ---
 
