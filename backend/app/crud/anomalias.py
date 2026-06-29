@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import func, text, desc
 from app.models.licitacoes import Licitacao
 from app.models.fornecedores import Contrato, Fornecedor
+
 from datetime import datetime, timedelta
 
 def get_anomalias_valor(db: Session, limite_fator: float = 3.0, limit: int = 20):
