@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 from sqlalchemy import func
+import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -18,6 +19,41 @@ logger = logging.getLogger(__name__)
 PNCP_API_URL = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao"
 MAX_PAGES = 100  # Limite para MVP (Aumentado para carga inicial de 6 meses)
 PAGE_SIZE = 50
+
+def get_state_file_path() -> str:
+    db_url = os.getenv("DATABASE_URL", "sqlite:///./openpncp.db")
+    if db_url.startswith("sqlite:///"):
+        db_path = db_url.replace("sqlite:///", "")
+        db_dir = os.path.dirname(db_path)
+        if db_dir and os.path.exists(db_dir):
+            return os.path.join(db_dir, "sync_state.json")
+    return "sync_state.json"
+
+def load_sync_state() -> datetime | None:
+    path = get_state_file_path()
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                date_str = data.get("ultima_data_historica")
+                if date_str:
+                    return datetime.strptime(date_str, "%Y-%m-%d")
+        except Exception as e:
+            logger.error(f"Erro ao ler arquivo de estado de sincronização: {e}")
+    return None
+
+def save_sync_state(dt: datetime):
+    path = get_state_file_path()
+    try:
+        db_dir = os.path.dirname(path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+            
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"ultima_data_historica": dt.strftime("%Y-%m-%d")}, f)
+        logger.info(f"Progresso da sincronização histórica salvo: {dt.strftime('%Y-%m-%d')}")
+    except Exception as e:
+        logger.error(f"Erro ao salvar arquivo de estado de sincronização: {e}")
 
 def parse_date(date_str: str) -> datetime | None:
     if not date_str:
@@ -275,73 +311,139 @@ def process_day(db, data_inicial: str, data_final: str) -> tuple[int, int, int]:
 def ingest_data(dt_inicial: str = None, dt_final: str = None):
     db = SessionLocal()
     
-    # 1. Determinar datas final e inicial
-    if dt_final:
-        try:
-            dt_final_dt = datetime.strptime(dt_final, "%Y%m%d")
-        except ValueError:
-            logger.error("Formato de data final inválido. Deve ser YYYYMMDD.")
-            db.close()
-            return
-    else:
-        dt_final_dt = datetime.now()
-        
-    if dt_inicial:
-        try:
-            dt_inicial_dt = datetime.strptime(dt_inicial, "%Y%m%d")
-        except ValueError:
-            logger.error("Formato de data inicial inválido. Deve ser YYYYMMDD.")
-            db.close()
-            return
-    else:
-        # Busca automática no banco
-        try:
-            max_date = db.query(func.max(Licitacao.data_publicacao)).scalar()
-            if max_date:
-                # Volta 1 dia para evitar perder dados publicados parcialmente no mesmo dia
-                dt_inicial_dt = max_date - timedelta(days=1)
-                logger.info(f"Data mais recente no banco: {max_date.strftime('%Y-%m-%d')}. "
-                            f"Catch-up automático iniciando em: {dt_inicial_dt.strftime('%Y-%m-%d')}")
-            else:
+    # Se dt_inicial ou dt_final foram passados, rodamos a sincronização histórica/manual clássica no intervalo solicitado
+    if dt_inicial or dt_final:
+        if dt_final:
+            try:
+                dt_final_dt = datetime.strptime(dt_final, "%Y%m%d")
+            except ValueError:
+                logger.error("Formato de data final inválido. Deve ser YYYYMMDD.")
+                db.close()
+                return
+        else:
+            dt_final_dt = datetime.now()
+            
+        if dt_inicial:
+            try:
+                dt_inicial_dt = datetime.strptime(dt_inicial, "%Y%m%d")
+            except ValueError:
+                logger.error("Formato de data inicial inválido. Deve ser YYYYMMDD.")
+                db.close()
+                return
+        else:
+            # Busca automática no banco clássica
+            try:
+                max_date = db.query(func.max(Licitacao.data_publicacao)).scalar()
+                if max_date:
+                    dt_inicial_dt = max_date - timedelta(days=1)
+                else:
+                    dt_inicial_dt = datetime.now() - timedelta(days=2)
+            except Exception as e:
+                logger.error(f"Erro ao buscar data mais recente: {e}. Usando fallback.")
                 dt_inicial_dt = datetime.now() - timedelta(days=2)
-                logger.info(f"Nenhum registro encontrado no banco. "
-                            f"Iniciando fallback padrão de 2 dias atrás: {dt_inicial_dt.strftime('%Y-%m-%d')}")
-        except Exception as e:
-            logger.error(f"Erro ao buscar data mais recente no banco: {e}. Usando fallback de 2 dias.")
-            dt_inicial_dt = datetime.now() - timedelta(days=2)
-            
-    logger.info(f"Sincronização agendada de {dt_inicial_dt.strftime('%Y-%m-%d')} até {dt_final_dt.strftime('%Y-%m-%d')}")
-    
-    total_ins = 0
-    total_upd = 0
-    total_con = 0
-    
-    # 2. Loop dia a dia
-    current_dt = dt_inicial_dt
-    try:
-        while current_dt <= dt_final_dt:
-            dia_str = current_dt.strftime("%Y%m%d")
-            logger.info(f"\n>>> Sincronizando dia {current_dt.strftime('%Y-%m-%d')}...")
-            
-            ins, upd, con = process_day(db, dia_str, dia_str)
-            total_ins += ins
-            total_upd += upd
-            total_con += con
-            
-            # Rate limit prevention: sleep de 2.0s entre dias
-            time.sleep(2.0)
-            current_dt += timedelta(days=1)
-            
-        logger.info(f"\n=== Sincronização Concluída ===")
-        logger.info(f"Total de novas licitações: {total_ins}")
-        logger.info(f"Total de licitações atualizadas: {total_upd}")
-        logger.info(f"Total de novos contratos: {total_con}")
+                
+        logger.info(f"Sincronização manual solicitada de {dt_inicial_dt.strftime('%Y-%m-%d')} até {dt_final_dt.strftime('%Y-%m-%d')}")
         
+        # Executa loop dia a dia clássico
+        total_ins = 0
+        total_upd = 0
+        total_con = 0
+        current_dt = dt_inicial_dt
+        try:
+            while current_dt <= dt_final_dt:
+                dia_str = current_dt.strftime("%Y%m%d")
+                logger.info(f"\n>>> Sincronizando dia {current_dt.strftime('%Y-%m-%d')}...")
+                ins, upd, con = process_day(db, dia_str, dia_str)
+                total_ins += ins
+                total_upd += upd
+                total_con += con
+                time.sleep(2.0)
+                current_dt += timedelta(days=1)
+                
+            logger.info(f"\n=== Sincronização Concluída ===")
+            logger.info(f"Total de novas licitações: {total_ins}")
+            logger.info(f"Total de licitações atualizadas: {total_upd}")
+            logger.info(f"Total de novos contratos: {total_con}")
+        except Exception as e:
+            logger.error(f"Erro inesperado durante a ingestão manual: {e}")
+            db.rollback()
+        finally:
+            db.close()
+        return
+
+    # MODO AUTOMÁTICO (sem datas informadas): Sincroniza hoje + 1 dia do histórico (catch-up)
+    hoje_dt = datetime.now()
+    hoje_str = hoje_dt.strftime("%Y%m%d")
+    
+    logger.info(f"Iniciando modo de sincronização automática e catch-up incremental...")
+    
+    # 1. Sincroniza o dia de hoje
+    logger.info(f"\n>>> [1/2] Sincronizando o dia de HOJE ({hoje_dt.strftime('%Y-%m-%d')})...")
+    total_ins, total_upd, total_con = 0, 0, 0
+    try:
+        ins, upd, con = process_day(db, hoje_str, hoje_str)
+        total_ins += ins
+        total_upd += upd
+        total_con += con
     except Exception as e:
-        logger.error(f"Erro inesperado durante a ingestão do período: {e}")
+        logger.error(f"Erro ao processar o dia de hoje: {e}")
         db.rollback()
-    finally:
         db.close()
+        return
+        
+    # 2. Carrega a data da última sincronização histórica (catch-up)
+    ultima_data_historica = load_sync_state()
+    
+    if not ultima_data_historica:
+        # Se não há estado salvo no JSON, busca a maior data no banco ANTES da importação de hoje
+        try:
+            # Para evitar pegar a data de hoje que acabamos de importar, buscamos a data máxima menor que hoje_dt
+            max_date = db.query(func.max(Licitacao.data_publicacao)).filter(Licitacao.data_publicacao < hoje_dt.date()).scalar()
+            if max_date:
+                # Se for datetime, mantemos. Se for string, convertemos
+                if isinstance(max_date, str):
+                    ultima_data_historica = datetime.strptime(max_date[:10], "%Y-%m-%d")
+                else:
+                    ultima_data_historica = datetime.combine(max_date, datetime.min.time())
+                logger.info(f"Nenhum estado de sincronização encontrado. Inicializado a partir do banco de dados: {ultima_data_historica.strftime('%Y-%m-%d')}")
+            else:
+                # Se o banco está vazio, inicia o catch-up a partir de 2 dias atrás
+                ultima_data_historica = hoje_dt - timedelta(days=2)
+                logger.info(f"Banco vazio e nenhum estado de sincronização. Inicializado com fallback de 2 dias atrás: {ultima_data_historica.strftime('%Y-%m-%d')}")
+        except Exception as e:
+            logger.error(f"Erro ao buscar data inicial do histórico no banco: {e}. Usando fallback.")
+            ultima_data_historica = hoje_dt - timedelta(days=2)
+            
+        save_sync_state(ultima_data_historica)
+        
+    # 3. Calcula o dia seguinte do histórico a ser processado
+    dia_historico_dt = ultima_data_historica + timedelta(days=1)
+    
+    if dia_historico_dt.date() < hoje_dt.date():
+        logger.info(f"\n>>> [2/2] Sincronizando dia histórico de CATCH-UP ({dia_historico_dt.strftime('%Y-%m-%d')})...")
+        time.sleep(2.0) # sleep curto entre o dia de hoje e o histórico
+        try:
+            dia_historico_str = dia_historico_dt.strftime("%Y%m%d")
+            ins_h, upd_h, con_h = process_day(db, dia_historico_str, dia_historico_str)
+            total_ins += ins_h
+            total_upd += upd_h
+            total_con += con_h
+            
+            # Se terminou com sucesso, avança e salva o novo progresso
+            save_sync_state(dia_historico_dt)
+            logger.info(f"Dia histórico {dia_historico_dt.strftime('%Y-%m-%d')} sincronizado e registrado no arquivo de progresso.")
+        except Exception as e:
+            logger.error(f"Erro ao processar o dia histórico {dia_historico_dt.strftime('%Y-%m-%d')}: {e}")
+            db.rollback()
+    else:
+        logger.info(f"\n>>> [2/2] Carga histórica está totalmente em dia (último registro: {ultima_data_historica.strftime('%Y-%m-%d')}). Sincronizado com a data de hoje.")
+        
+    logger.info(f"\n=== Sincronização Automática Concluída ===")
+    logger.info(f"Total de novas licitações no ciclo: {total_ins}")
+    logger.info(f"Total de licitações atualizadas no ciclo: {total_upd}")
+    logger.info(f"Total de novos contratos no ciclo: {total_con}")
+    db.close()
+
 
 if __name__ == "__main__":
     import argparse
