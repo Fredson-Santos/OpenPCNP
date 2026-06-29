@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true, // Necessário para o Docker expor as portas
+    allowedHosts: ['openpncp.conekta.tech'],
     watch: {
       usePolling: true, // Garante que o hot reload funcione no Docker no Windows
     }
