@@ -179,7 +179,7 @@ openpncp/
    ```bash
    npm run dev
    ```
-   * O painel estará acessível no seu navegador em: `http://localhost:5173`
+   * O painel estará acessível no seu navegador em: `http://localhost:3005`
 
 ---
 
@@ -193,7 +193,7 @@ Você pode levantar toda a aplicação (API FastAPI + Frontend React) em contain
    docker-compose up --build
    ```
 3. A estrutura local subirá automaticamente:
-   * **Frontend:** `http://localhost:5173`
+   * **Frontend:** `http://localhost:3005`
    * **Backend (API):** `http://localhost:8000`
    * **Swagger UI:** `http://localhost:8000/docs`
 

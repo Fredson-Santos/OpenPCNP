@@ -3,22 +3,23 @@ services:
     build: 
       context: ./backend
       dockerfile: Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - ./backend:/app
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./openpncp.db
+      - DATABASE_URL=sqlite:////app/data/openpncp.db
+    volumes:
+      - sqlite_data:/app/data
+    restart: always
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     ports:
-      - "5173:5173"
-    environment:
-      - CHOKIDAR_USEPOLLING=true
+      - "3005:3005"
+    restart: always
+
+volumes:
+  sqlite_data:
