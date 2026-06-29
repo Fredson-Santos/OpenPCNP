@@ -9,6 +9,12 @@ export default defineConfig({
     port: 3005,
     watch: {
       usePolling: true, // Garante que o hot reload funcione no Docker no Windows
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      }
     }
   },
   test: {
